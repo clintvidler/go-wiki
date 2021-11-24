@@ -8,6 +8,13 @@ import (
 	"text/template"
 )
 
+func envPort() string {
+	if value, ok := os.LookupEnv("PORT"); ok {
+		return ":" + value
+	}
+	return ":9090"
+}
+
 type Page struct {
 	Title string
 	Body  []byte
@@ -86,10 +93,11 @@ func homePageHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	port := envPort()
 	http.HandleFunc("/", homePageHandler)
 	http.HandleFunc("/view/", makeHandler(viewHandler))
 	http.HandleFunc("/edit/", makeHandler(editHandler))
 	http.HandleFunc("/save/", makeHandler(saveHandler))
-	// log.Fatal(http.ListenAndServe(":8080", nil))
-	log.Fatal(http.ListenAndServeTLS(":8081", "certs/localhost.crt", "certs/localhost.key", nil))
+	// log.Fatal(http.ListenAndServe(port, nil))
+	log.Fatal(http.ListenAndServeTLS(port, "certs/localhost.crt", "certs/localhost.key", nil))
 }

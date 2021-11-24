@@ -8,13 +8,34 @@ View, edit, and save text files via http to the file system.
 
 `go run main.go`
 
-In a web browser, visit localhost:8080
+In a web browser, visit localhost:9090 _(or specified port)_
 
 - /view/x will redirect to create a page with title 'x'
 
-- /edit/x will edit page with title 'x' (Note: editing a non-existent url will create a new page)
+- /edit/x will edit page with title 'x' _(editing a non-existent url will create a new page)_
 
-## Generate self-signed certificates
+### Docker
+
+Build:
+
+```
+docker build -t go-wiki .
+```
+
+Run in detached mode:
+
+```
+docker run -d -p 9090:9090 -e PORT="9090" go-wiki
+```
+
+Find and stop a container:
+
+```
+docker ps
+docker stop <CONTAINER ID>
+```
+
+### Generate self-signed certificates
 
 ```
 mkdir certs
