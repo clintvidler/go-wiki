@@ -17,3 +17,9 @@
 # System Files
 .DS_Store
 Thumbs.db
+
+# Certificates
+certs/
+*.key
+*.crt
+*.pem
