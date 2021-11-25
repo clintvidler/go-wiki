@@ -1,11 +1,15 @@
 package main
 
 import (
+	"context"
+	"crypto/tls"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"regexp"
 	"text/template"
+	"time"
 )
 
 func envPort() string {
@@ -94,10 +98,41 @@ func homePageHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	port := envPort()
-	http.HandleFunc("/", homePageHandler)
-	http.HandleFunc("/view/", makeHandler(viewHandler))
-	http.HandleFunc("/edit/", makeHandler(editHandler))
-	http.HandleFunc("/save/", makeHandler(saveHandler))
-	// log.Fatal(http.ListenAndServe(port, nil))
-	log.Fatal(http.ListenAndServeTLS(port, "certs/localhost.crt", "certs/localhost.key", nil))
+
+	sm := http.NewServeMux()
+	sm.HandleFunc("/", homePageHandler)
+	sm.HandleFunc("/view/", makeHandler(viewHandler))
+	sm.HandleFunc("/edit/", makeHandler(editHandler))
+	sm.HandleFunc("/save/", makeHandler(saveHandler))
+
+	server := http.Server{
+		Addr:         port,
+		Handler:      sm,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  60 * time.Second,
+		TLSConfig:    &tls.Config{NextProtos: []string{"H2", "http/1.1"}},
+	}
+
+	go func() {
+		log.Println("Starting server on", port)
+
+		if err := server.ListenAndServeTLS("certs/localhost.crt", "certs/localhost.key"); err != nil {
+			log.Println(err)
+			os.Exit(1)
+		}
+	}()
+
+	// catch any os signals to shutdown
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	signal.Notify(c, os.Kill)
+
+	// block until a signal is recieved
+	sig := <-c
+	log.Println("Signal from os:", sig)
+
+	// gracefully shutdown the server, waiting up to 30 seconds for operations to complete
+	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	server.Shutdown(ctx)
 }
